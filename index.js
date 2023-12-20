@@ -1,27 +1,19 @@
-var httpProxy = require('http-proxy');
+const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
-var proxy = httpProxy.createServer({
-  target:'http://node.glacier.host:3015'
-});
+const app = express();
 
-proxy.listen(3000);
+const proxyOptions = {
+  target: 'http://node.glacier.host:3015',
+  changeOrigin: true, // Needed for virtual hosted sites
+  ws: true, // Proxy websockets
+};
 
-proxy.on('error', function (err, req, res) {
-  res.writeHead(500, {
-    'Content-Type': 'text/plain'
-  });
+const proxy = createProxyMiddleware(proxyOptions);
 
-  res.end('Something went wrong. And we are reporting a custom error message.');
-});
+app.use('/api', proxy); // Change '/api' to the path you want to proxy
 
-proxy.on('proxyRes', function (proxyRes, req, res) {
-  console.log('RAW Response from the target', JSON.stringify(proxyRes.headers, true, 2));
-});
-
-proxy.on('open', function (proxySocket) {
-  proxySocket.on('data', hybiParseAndLogMessage);
-});
-
-proxy.on('close', function (res, socket, head) {
-  console.log('Client disconnected');
+const port = 3000;
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
 });
